@@ -1,10 +1,26 @@
 import os
+import sys
 from datetime import datetime
 import numpy as np
 import pandas as pd
 import xarray as xr
 import geopandas as gpd
 from shapely.geometry import Point
+
+# Change directory 
+os.getcwd()
+print ('cwd is %s ' % (os.getcwd()))
+dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/figure'
+
+# Append the location of our function directory
+dir_python_scripts = '/home/jh94030/scripts/python/postdoc_project/rxfire/analysis'
+sys.path.append(os.path.join(dir_python_scripts,'step3_BurnDataSelection'))
+
+from util import CMAQGrid2D
+
+dir_work = os.path.join(dir_python_local)
+os.chdir(dir_work)
+print ('cwd is %s ' % (os.getcwd()))
 
 # --------------------- Inputs & Paths ---------------------
 CMAQ_ALL_PATH = '/scratch/jh94030/CMAQ-output/EQUATES/w+_rxf/no_bs_shift/combined/hr2dy'
@@ -136,8 +152,8 @@ def stats_over_mask(mean_fire_2d, mean_total_2d, mask):
 
 def format_pair(s):
     """Format helper: (Mean ± SD (% of total PM2.5)), and 'GM, GSD'."""
-    return f"{s['mean_fire']:.4f} ± {s['sd_fire']:.4f} ({s['mean_pct']:.1f}%)", f"{s['gm']:.4f}, {s['gsd']:.3f}"
-
+    return f"{s['mean_fire']:.4f} +/- {s['sd_fire']:.4f} ({s['mean_pct']:.1f}%)", f"{s['gm']:.4f}, {s['gsd']:.3f}"
+    
 # --------------------- Build Table S3 ---------------------
 rows = []
 def add_row(season_label, year_label, mf2d, mt2d):
