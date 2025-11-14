@@ -1,4 +1,4 @@
-# Figures 2 & 2 (inset) from a single script
+# Figures S6
 import os
 import numpy as np
 import pandas as pd
@@ -49,7 +49,7 @@ use_arial(ARIAL_PATH_2)
 
 data = load_years(DATA_DIR, YEARS)
 
-# ---------- Figure 2: Monthly temporal profiles ----------
+# ---------- Figure S6: Monthly temporal profiles ----------
 data['month'] = data['DATE'].dt.month
 
 # Sum by STATE × YEAR × month
@@ -99,87 +99,87 @@ ax.text(
 ax.set_ylim(-0.5e5, 6e5)
 ax.set_xticks(range(1,13))
 ax.set_xticklabels(['J','F','M','A','M','J','J','A','S','O','N','D'])
-ax.set_xlabel('Month', fontsize=14, labelpad=20)
+ax.set_xlabel('Month', fontsize=14, labelpad=10)
 ax.ticklabel_format(axis='y', style='sci', scilimits=(5,5))
 ax.yaxis.get_major_formatter().set_useMathText(True)
-ax.set_ylabel('Reported acres burned', fontsize=14, labelpad=20)
+ax.set_ylabel('Reported acres burned', fontsize=14, labelpad=10)
 ax.tick_params(axis='x', labelsize=12)
 ax.tick_params(axis='y', labelsize=12)
 ax.grid(True, axis='y', linestyle=':', linewidth=0.5)
-# ax.legend(fontsize=12, loc='center right', frameon=False)
+ax.legend(fontsize=12, ncol=3, loc='upper right', frameon=False)
 
 plt.savefig(OUT_MONTHLY, bbox_inches='tight', dpi=600)
 
-# ---------- Figure 2 (Inset): Weekly temporal profiles ----------
-# Day-of-week as ordered categorical
-data['day'] = pd.Categorical(
-    data['DATE'].dt.day_name(),
-    categories=DOW_FULL,
-    ordered=True
-)
+# # ---------- Figure S6 (Inset): Weekly temporal profiles ----------
+# # Day-of-week as ordered categorical
+# data['day'] = pd.Categorical(
+#     data['DATE'].dt.day_name(),
+#     categories=DOW_FULL,
+#     ordered=True
+# )
 
-# Sum ACRES by STATE × YEAR × day
-daily = (
-    data.groupby(['STATE', 'YEAR', 'day'], as_index=False, observed=True)['ACRES']
-        .sum()
-)
+# # Sum ACRES by STATE × YEAR × day
+# daily = (
+#     data.groupby(['STATE', 'YEAR', 'day'], as_index=False, observed=True)['ACRES']
+#         .sum()
+# )
 
-# Ensure each STATE × YEAR has all 7 days
-full_dow_index = pd.MultiIndex.from_product(
-    [STATE_ORDER, YEARS, DOW_FULL], names=['STATE', 'YEAR', 'day']
-)
-daily = (
-    daily.set_index(['STATE', 'YEAR', 'day'])
-         .reindex(full_dow_index, fill_value=0)
-         .reset_index()
-)
+# # Ensure each STATE × YEAR has all 7 days
+# full_dow_index = pd.MultiIndex.from_product(
+#     [STATE_ORDER, YEARS, DOW_FULL], names=['STATE', 'YEAR', 'day']
+# )
+# daily = (
+#     daily.set_index(['STATE', 'YEAR', 'day'])
+#          .reindex(full_dow_index, fill_value=0)
+#          .reset_index()
+# )
 
-# Weekly totals by STATE × YEAR
-weekly_totals = (
-    daily.groupby(['STATE', 'YEAR'])['ACRES']
-         .sum()
-         .reset_index()
-         .rename(columns={'ACRES': 'WEEK_TOTAL'})
-)
+# # Weekly totals by STATE × YEAR
+# weekly_totals = (
+#     daily.groupby(['STATE', 'YEAR'])['ACRES']
+#          .sum()
+#          .reset_index()
+#          .rename(columns={'ACRES': 'WEEK_TOTAL'})
+# )
 
-# Merge and compute daily fraction with zero-guard
-daily = pd.merge(daily, weekly_totals, on=['STATE', 'YEAR'], how='left')
-daily['WEEK_TOTAL'] = daily['WEEK_TOTAL'].replace(0, np.nan)
-daily['FRACTION'] = daily['ACRES'] / daily['WEEK_TOTAL']
+# # Merge and compute daily fraction with zero-guard
+# daily = pd.merge(daily, weekly_totals, on=['STATE', 'YEAR'], how='left')
+# daily['WEEK_TOTAL'] = daily['WEEK_TOTAL'].replace(0, np.nan)
+# daily['FRACTION'] = daily['ACRES'] / daily['WEEK_TOTAL']
 
-# Mean & std across years for STATE × day
-stats_week = (
-    daily.groupby(['STATE', 'day'])['FRACTION']
-         .agg(mean='mean', std='std')
-         .reset_index()
-)
-stats_week[['mean', 'std']] = stats_week[['mean', 'std']].fillna(0)
-stats_week['day_idx'] = stats_week['day'].map(DOW_TO_IDX)
+# # Mean & std across years for STATE × day
+# stats_week = (
+#     daily.groupby(['STATE', 'day'])['FRACTION']
+#          .agg(mean='mean', std='std')
+#          .reset_index()
+# )
+# stats_week[['mean', 'std']] = stats_week[['mean', 'std']].fillna(0)
+# stats_week['day_idx'] = stats_week['day'].map(DOW_TO_IDX)
 
-# Plot (unchanged sizes)
-fig, ax = plt.subplots(figsize=(3.6, 2))
+# # Plot (unchanged sizes)
+# fig, ax = plt.subplots(figsize=(3.6, 2))
 
-for st in STATE_ORDER:
-    sub = stats_week[stats_week['STATE'] == st].sort_values('day_idx')
-    x = sub['day_idx'].to_numpy()
-    mean = sub['mean'].to_numpy()
-    std  = sub['std'].to_numpy()
+# for st in STATE_ORDER:
+#     sub = stats_week[stats_week['STATE'] == st].sort_values('day_idx')
+#     x = sub['day_idx'].to_numpy()
+#     mean = sub['mean'].to_numpy()
+#     std  = sub['std'].to_numpy()
 
-    ax.plot(x, mean, label=STATE_LABELS[st], color=COLORS[st], linewidth=2)
-    ax.fill_between(x, mean - std, mean + std, color=COLORS[st], alpha=0.3)
+#     ax.plot(x, mean, label=STATE_LABELS[st], color=COLORS[st], linewidth=2)
+#     ax.fill_between(x, mean - std, mean + std, color=COLORS[st], alpha=0.3)
 
-# Axis styling (unchanged)
-ax.set_ylim(0, 0.28)
-ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25])
-ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
-ax.set_xlabel('Day of Week', fontsize=12, labelpad=10)
-ax.set_xticks(np.arange(7))
-ax.set_xticklabels(DOW_ABBR)
-ax.set_ylabel('Fraction', fontsize=12, labelpad=10)
-ax.tick_params(axis='x', labelsize=10)
-ax.tick_params(axis='y', labelsize=9)
-ax.grid(True, axis='y', linestyle=':', linewidth=0.5)
-ax.legend(fontsize=11, loc='upper center', bbox_to_anchor=(0.5, 0.6), frameon=False)
+# # Axis styling (unchanged)
+# ax.set_ylim(0, 0.28)
+# ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25])
+# ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
+# ax.set_xlabel('Day of Week', fontsize=12, labelpad=10)
+# ax.set_xticks(np.arange(7))
+# ax.set_xticklabels(DOW_ABBR)
+# ax.set_ylabel('Fraction', fontsize=12, labelpad=10)
+# ax.tick_params(axis='x', labelsize=10)
+# ax.tick_params(axis='y', labelsize=9)
+# ax.grid(True, axis='y', linestyle=':', linewidth=0.5)
+# ax.legend(fontsize=11, loc='upper center', bbox_to_anchor=(0.5, 0.6), frameon=False)
 
-plt.tight_layout()
-plt.savefig(OUT_WEEKLY, bbox_inches='tight', dpi=600)
+# plt.tight_layout()
+# plt.savefig(OUT_WEEKLY, bbox_inches='tight', dpi=600)

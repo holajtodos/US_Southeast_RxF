@@ -1,5 +1,5 @@
 # Generates Figure S11
-# Author: Jingting HUANG (cleanup/merge assist)
+# Author: Jingting HUANG
 
 import os
 import sys
