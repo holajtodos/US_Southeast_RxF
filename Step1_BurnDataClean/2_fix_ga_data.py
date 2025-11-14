@@ -15,7 +15,7 @@ from rasterstats import zonal_stats
 # Change directory
 os.getcwd()
 print('cwd is %s ' % (os.getcwd()))
-dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/data/SE_permit_data_2010-2020/test_criteria'
+dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/data/SE_permit_data_2010-2020/update_criteria'
 
 # Append the location of our function directory
 dir_python_scripts = '/home/jh94030/scripts/python/postdoc_project/rxfire/analysis/step4_RxFireEmissionCode'
