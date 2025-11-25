@@ -33,13 +33,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 # ------------------------- Environment / Paths -------------------------
-# Use os.environ (not !export) so this works in scripts
-os.environ["PROJ_LIB"]  = "/home/jh94030/.conda/envs/myenv/share/proj"
-os.environ["PROJ_DATA"] = "/home/jh94030/.conda/envs/myenv/share/proj"
-
-from pyproj import datadir
-datadir.set_data_dir("/home/jh94030/.conda/envs/myenv/share/proj")  # keep consistent
-
 dir_python_local   = "/home/jh94030/scripts/python/postdoc_project/rxfire/figure"
 dir_python_scripts = "/home/jh94030/scripts/python/postdoc_project/rxfire/analysis"
 
