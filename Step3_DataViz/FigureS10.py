@@ -199,7 +199,7 @@ mean_fire_pm25_masked = np.where(mask, mean_fire_pm25, np.nan)
 mean_smoke_day_counts = multi_year_avg_smoke_days(YEARS, SMOKE_THRESHOLD, season=SEASON)
 mean_smoke_day_counts_masked = np.where(mask, mean_smoke_day_counts, np.nan)
 
-# ------------------------- Figure S8: Annual avg Rx fire PM2.5 -------------------------
+# ------------------------- Figure S10: Annual avg Rx fire PM2.5 -------------------------
 fig, ax = plt.subplots(figsize=(6, 5), dpi=600,
                        subplot_kw={'projection': ccrs.AlbersEqualArea(central_longitude=-88, central_latitude=33)})
 ax.set_extent([-91, -75, 24, 37])
@@ -345,7 +345,7 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.15, hspace=0.1)
 plt.savefig(os.path.join(dir_python_local, f"joyplot_gradient_rx_fire_pm25{_suffix}.png"), dpi=600)
 plt.close()
 
-# # ------------------------- Optional: Figure S8: Annual average high Rx fire smoke days -------------------------
+# # ------------------------- Optional: Figure S10: Annual average high Rx fire smoke days -------------------------
 # # Colormap (unchanged)
 # colors = [
 #     '#B6B3D6', '#CFCCE3', '#D5D3DE', '#D5D1D1',

@@ -1,4 +1,4 @@
-# Generates Figure S11
+# Generates Figures S13a-c
 # Author: Jingting HUANG
 
 import os
@@ -121,8 +121,8 @@ def metrics_dict_default():
 remove_nan_values = globals().get('remove_nan_values', remove_nan_values_default)
 metrics_dict = globals().get('metrics_dict', metrics_dict_default())
 
-# ------------------------- Figure S11a -------------------------
-def generate_figure6a(gdf_SE, gdf_FL, gdf_GA, gdf_SC):
+# ------------------------- Figure S13a -------------------------
+def generate_figure_a(gdf_SE, gdf_FL, gdf_GA, gdf_SC):
     # Load CMAQ grid
     cmaq_info = CMAQGrid2D(METCRO2D)
     cmaq_lon, cmaq_lat = cmaq_info['Lon'], cmaq_info['Lat']
@@ -184,7 +184,7 @@ def generate_figure6a(gdf_SE, gdf_FL, gdf_GA, gdf_SC):
     cmap = LinearSegmentedColormap.from_list('quintile_rxf_pm25', colors, N=len(colors))
     norm = BoundaryNorm(bounds, cmap.N, clip=True)
 
-    # === Map (original Figure S11a) ===
+    # === Map ===
     aqs_fp = os.path.join(DATA_DIR, 'collocated_mod_obs', f'aq_SE_{YEARS[0]}_RXF',
                           f'AQS_Daily_aq_SE_{YEARS[0]}_RXF_with_smoke_day.csv')
     df_result = pd.read_csv(aqs_fp)
@@ -312,8 +312,8 @@ def generate_figure6a(gdf_SE, gdf_FL, gdf_GA, gdf_SC):
     plt.close(fig)
     print(f"[6a] Saved: {out_joy}")
 
-# ------------------------- Figure S11b -------------------------
-def generate_figure6b(gdf_SE):
+# ------------------------- Figure S13b -------------------------
+def generate_figure_b(gdf_SE):
     selected_metrics = ["# Pairs", "MB", "RMSE", "Spearman R"]
     colorbar_limits = {
         "# Pairs": (0, 100),
@@ -433,8 +433,8 @@ def generate_figure6b(gdf_SE):
         plt.close(fig)
         print(f"[6b] Saved: {out_png}")
 
-# ------------------------- Figure S11c -------------------------
-def generate_figure6c():
+# ------------------------- Figure S13c -------------------------
+def generate_figure_c():
     from sklearn.linear_model import LinearRegression
 
     years = YEARS
@@ -592,9 +592,9 @@ def main():
 
     gdf_SE, gdf_FL, gdf_GA, gdf_SC = load_states()
 
-    generate_figure6a(gdf_SE, gdf_FL, gdf_GA, gdf_SC)
-    generate_figure6b(gdf_SE)
-    generate_figure6c()
+    generate_figure_a(gdf_SE, gdf_FL, gdf_GA, gdf_SC)
+    generate_figure_b(gdf_SE)
+    generate_figure_c()
 
 if __name__ == "__main__":
     main()

@@ -1,18 +1,18 @@
-# Figures S6
+# Figure S7
 import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib import font_manager
-from matplotlib.ticker import FormatStrFormatter  # kept for parity with your original
+from matplotlib.ticker import FormatStrFormatter
 
 # -------------------- Config --------------------
 ARIAL_PATH_1 = "/home/jh94030/fonts/Arial.ttf"
 ARIAL_PATH_2 = "/home/jh94030/fonts/Arial Bold.ttf"
 
 dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/data'
-DATA_DIR = f"{dir_python_local}/SE_permit_data_2010-2020/update_criteria"   # expects dir_python_local in env
+DATA_DIR = f"{dir_python_local}/SE_permit_data_2010-2020/update_criteria"
 YEARS = [2017, 2018, 2019]
 
 STATE_ORDER  = ['FL', 'GA', 'SC']
@@ -49,7 +49,7 @@ use_arial(ARIAL_PATH_2)
 
 data = load_years(DATA_DIR, YEARS)
 
-# ---------- Figure S6: Monthly temporal profiles ----------
+# ---------- Figure S7: Monthly temporal profiles ----------
 data['month'] = data['DATE'].dt.month
 
 # Sum by STATE × YEAR × month
@@ -76,7 +76,7 @@ stats_month = (
 )
 stats_month['std'] = stats_month['std'].fillna(0)
 
-# Plot (keep your sizes/lines)
+# Plot
 fig, ax = plt.subplots(figsize=(7, 2.8))
 
 for st in STATE_ORDER:
@@ -88,14 +88,14 @@ for st in STATE_ORDER:
     ax.plot(months, mean, label=STATE_LABELS[st], color=COLORS[st], linewidth=4)
     ax.fill_between(months, mean - std, mean + std, color=COLORS[st], alpha=0.3)
 
-# Season boundary & label (uses current y-lims)
+# Season boundary & label
 ax.axvline(x=4.5, color='#AA3A49', linestyle='-', linewidth=2)
 ax.text(
     4.5, ax.get_ylim()[1] * 1.02, 'high-burn → low-burn',
     rotation=0, va='bottom', ha='center', fontsize=15, color='#AA3A49'
 )
 
-# Axis styling (unchanged)
+# Axis styling
 ax.set_ylim(-0.5e5, 6e5)
 ax.set_xticks(range(1,13))
 ax.set_xticklabels(['J','F','M','A','M','J','J','A','S','O','N','D'])
@@ -110,7 +110,7 @@ ax.legend(fontsize=12, ncol=3, loc='upper right', frameon=False)
 
 plt.savefig(OUT_MONTHLY, bbox_inches='tight', dpi=600)
 
-# # ---------- Figure S6 (Inset): Weekly temporal profiles ----------
+# # ---------- Figure S7 (Inset): Weekly temporal profiles ----------
 # # Day-of-week as ordered categorical
 # data['day'] = pd.Categorical(
 #     data['DATE'].dt.day_name(),
@@ -156,7 +156,7 @@ plt.savefig(OUT_MONTHLY, bbox_inches='tight', dpi=600)
 # stats_week[['mean', 'std']] = stats_week[['mean', 'std']].fillna(0)
 # stats_week['day_idx'] = stats_week['day'].map(DOW_TO_IDX)
 
-# # Plot (unchanged sizes)
+# # Plot
 # fig, ax = plt.subplots(figsize=(3.6, 2))
 
 # for st in STATE_ORDER:
@@ -168,7 +168,7 @@ plt.savefig(OUT_MONTHLY, bbox_inches='tight', dpi=600)
 #     ax.plot(x, mean, label=STATE_LABELS[st], color=COLORS[st], linewidth=2)
 #     ax.fill_between(x, mean - std, mean + std, color=COLORS[st], alpha=0.3)
 
-# # Axis styling (unchanged)
+# # Axis styling
 # ax.set_ylim(0, 0.28)
 # ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25])
 # ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))

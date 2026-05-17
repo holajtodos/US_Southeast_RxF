@@ -49,7 +49,6 @@ cmaq_lon, cmaq_lat = cmaq_info['Lon'], cmaq_info['Lat']
 # Define mask for SE states
 def create_mask(lon_grid, lat_grid, gdf):
     mask = np.zeros(lon_grid.shape, dtype=bool)
-    # Note: This is simple but slow; consider vectorized point-in-polygon for large grids.
     for i in range(lon_grid.shape[0]):
         for j in range(lon_grid.shape[1]):
             point = Point(lon_grid[i, j], lat_grid[i, j])

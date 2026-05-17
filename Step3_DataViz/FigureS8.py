@@ -1,3 +1,4 @@
+# Figure S8
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
@@ -80,11 +81,6 @@ ax.axvline(x=4.5, color='#AA3A49', linestyle='-', linewidth=2)
 ax.text(4.5, 1.02, 'high-burn → low-burn',
         transform=ax.get_xaxis_transform(),  # y relative to axes
         va='bottom', ha='center', fontsize=15, color='#AA3A49')
-
-# for month, label in [(4.5, 'high-burn → low-burn')]:
-#     ax.axvline(x=month, color='#AA3A49', linestyle='-', linewidth=2)
-#     ax.text(month, ax.get_ylim()[1]*1.02, label,
-#             rotation=0, va='bottom', ha='center', fontsize=15, color='#AA3A49')
 
 # Aesthetics
 ax.set_xticks(range(1, 13))

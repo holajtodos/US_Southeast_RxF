@@ -199,6 +199,6 @@ order = base_cols + sum([
 df = df[order]
 
 # Save to CSV for SI
-out_csv = "Table_S7_permit_based_rx_PM25_stats.csv"
+out_csv = "Table_S10_permit_based_rx_PM25_stats.csv"
 df.to_csv(out_csv, index=False)
 print(f"Saved: {out_csv}")

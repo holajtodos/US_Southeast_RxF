@@ -25,7 +25,7 @@ dir_data = os.path.join("/home/jh94030/scripts/python/postdoc_project/rxfire/dat
 years = [2017, 2018, 2019]
 states = ["Florida", "Georgia", "South Carolina"]  # we'll add "Full region" automatically
 seasons_labels = {"High-burn": lambda m: m <= 4, "Low-burn": lambda m: m >= 5}
-out_csv = os.path.join(dir_python_local, "Table_S8_P-tot-test_PM25_metrics.csv")
+out_csv = os.path.join(dir_python_local, "Table_S11_P-tot_PM25_metrics.csv")
 # -----------------------------------------------
 
 # ---------- Metric helpers ----------
@@ -90,7 +90,7 @@ if "season" not in df_all.columns:
     df_all["date"] = pd.to_datetime(dict(year=df_all["SYYYY"], month=df_all["SMM"], day=df_all["SDD"]))
     df_all["season"] = np.where(df_all["date"].dt.month <= 4, "High-burn", "Low-burn")
 
-# ---------- Build Table S8 ----------
+# ---------- Build Table S11 ----------
 rows = []
 state_labels = states + ["Full region"]
 
@@ -151,31 +151,31 @@ col_order = [
     "NMB_18 (%)", "NME_18 (%)", "r_18",
     "NMB_19 (%)", "NME_19 (%)", "r_19",
 ]
-table_s8 = pd.DataFrame(rows)
+table_s11 = pd.DataFrame(rows)
 
 # Ensure all expected columns exist (in case of totally empty subsets)
 for c in col_order:
-    if c not in table_s8.columns:
-        table_s8[c] = np.nan
+    if c not in table_s11.columns:
+        table_s11[c] = np.nan
 
-table_s8 = table_s8[col_order]
+table_s11 = table_s11[col_order]
 
 # Round numeric columns nicely (2 decimals for % and r), keep # Pairs as int
-pct_cols = [c for c in table_s8.columns if "(%)" in c]
+pct_cols = [c for c in table_s11.columns if "(%)" in c]
 r_cols   = ["r", "r_17", "r_18", "r_19"]
 
 for c in pct_cols + r_cols:
-    table_s8[c] = table_s8[c].astype(float).round(2)
+    table_s11[c] = table_s11[c].astype(float).round(2)
 
-table_s8["# Pairs"] = table_s8["# Pairs"].fillna(0).astype(int)
+table_s11["# Pairs"] = table_s11["# Pairs"].fillna(0).astype(int)
 
 # Sort rows in a readable order: FL, GA, SC, Full region; High-burn then Low-burn
 state_cat = pd.CategoricalDtype(["Florida", "Georgia", "South Carolina", "Full region"], ordered=True)
 season_cat = pd.CategoricalDtype(["High-burn", "Low-burn"], ordered=True)
-table_s8["State"] = table_s8["State"].astype(state_cat)
-table_s8["Burn season"] = table_s8["Burn season"].astype(season_cat)
-table_s8 = table_s8.sort_values(["State", "Burn season"]).reset_index(drop=True)
+table_s11["State"] = table_s11["State"].astype(state_cat)
+table_s11["Burn season"] = table_s11["Burn season"].astype(season_cat)
+table_s11 = table_s11.sort_values(["State", "Burn season"]).reset_index(drop=True)
 
 # Save to CSV
-table_s8.to_csv(out_csv, index=False)
+table_s11.to_csv(out_csv, index=False)
 print(f"\nSaved to: {out_csv}")

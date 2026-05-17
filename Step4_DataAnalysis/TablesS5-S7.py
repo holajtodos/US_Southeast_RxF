@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Build Table S4/S5/S6: Size distribution of Rx burned areas (Permits vs NEI)
+Build Table S5-S7: Size distribution of Rx burned areas (Permits vs NEI)
 for Florida, Georgia, South Carolina (2017–2019).
-
-CHANGE vs previous:
-- The size-bin cells are PERCENTAGES of total # of fires for that (State, Source, Year).
-- The final row shows the actual Total # of fires (counts) for each column.
 
 Input:
 - Permit files (one per year): SE_Combined_Permit_lf_3states_rx_{YYYY}.csv
@@ -15,9 +11,9 @@ Input:
 
 Output:
 - CSVs:
-  - Table_S4_Florida_Size_Distribution_2017_2019.csv
-  - Table_S5_Georgia_Size_Distribution_2017_2019.csv
-  - Table_S6_South_Carolina_Size_Distribution_2017_2019.csv
+  - Table_S5_Florida_Size_Distribution_2017_2019.csv
+  - Table_S6_Georgia_Size_Distribution_2017_2019.csv
+  - Table_S7_South_Carolina_Size_Distribution_2017_2019.csv
 """
 
 import os
@@ -34,7 +30,7 @@ PERMIT_DIR = os.path.join(BASE_DIR, "SE_permit_data_2010-2020", "update_criteria
 PERMIT_PATTERN = "SE_Combined_Permit_lf_3states_rx_{year}.csv"  # change to .parquet if needed
 
 # NEI: yearly files
-NEI_DIR = os.path.join(BASE_DIR, "NEI_rxf_inv")
+NEI_DIR = os.path.join(BASE_DIR, "oth_fire_inv", "NEI_rxf_inv")
 NEI_PATTERN = "SE_Combined_NEI_rx_3states_{year}.csv"  # has ACRESBURNED
 
 YEARS = [2017, 2018, 2019]
@@ -50,9 +46,9 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 # Table filenames (S4/S5/S6)
 OUT_FILES = {
-    "FL": os.path.join(OUT_DIR, "Table_S4_Florida_Size_Distribution_2017_2019.csv"),
-    "GA": os.path.join(OUT_DIR, "Table_S5_Georgia_Size_Distribution_2017_2019.csv"),
-    "SC": os.path.join(OUT_DIR, "Table_S6_South_Carolina_Size_Distribution_2017_2019.csv"),
+    "FL": os.path.join(OUT_DIR, "Table_S5_Florida_Size_Distribution_2017_2019.csv"),
+    "GA": os.path.join(OUT_DIR, "Table_S6_Georgia_Size_Distribution_2017_2019.csv"),
+    "SC": os.path.join(OUT_DIR, "Table_S7_South_Carolina_Size_Distribution_2017_2019.csv"),
 }
 
 # -------------------------------------------------------------------

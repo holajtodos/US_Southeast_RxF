@@ -36,7 +36,6 @@ os.chdir(dir_work)
 print ('cwd is %s ' % (os.getcwd()))
 ###############################################################################
 # Set plot style and font
-# SAFETY: don't crash if font files aren't present
 try:
     font_manager.fontManager.addfont("/home/jh94030/fonts/Arial.ttf")
     font_manager.fontManager.addfont("/home/jh94030/fonts/Arial Bold.ttf")
@@ -100,7 +99,6 @@ for i, state in enumerate(['Florida', 'Georgia', 'South Carolina']):
     # Plot filled areas for modeled PM
     ax.fill_between(df_daily_avg['date'], df_daily_avg['PM_TOT_mod'],
                     color='#FEE4A6', alpha=0.7, label='CMAQ-predicted total ' + r'$\mathrm{PM}_{2.5}$ mean', zorder=2)
-#                     color='#E1D7C0', alpha=0.7, label='CMAQ-predicted total ' + r'$\mathrm{PM}_{2.5}$ mean', zorder=2)
 
     if 'PM_TOT_mod_rxf' in df_daily_avg.columns:
         ax.fill_between(df_daily_avg['date'], df_daily_avg['PM_TOT_mod_rxf'],
@@ -109,7 +107,6 @@ for i, state in enumerate(['Florida', 'Georgia', 'South Carolina']):
     # Line plot for observed PM
     ax.plot(df_daily_avg['date'], df_daily_avg['PM_TOT_ob'], linestyle='-', linewidth=1.5,
             color='#2B6688', label='Observed total ' + r'$\mathrm{PM}_{2.5}$ mean', zorder=4)
-         #   path_effects=[SimpleLineShadow(shadow_color="grey", linewidth=0.5), Normal()], zorder=4)
     
     ax.set_xlim([pd.Timestamp('2016-12-31'), pd.Timestamp('2019-12-31')])
     
@@ -163,5 +160,5 @@ for i, state in enumerate(['Florida', 'Georgia', 'South Carolina']):
 
     out_fn = '/home/jh94030/scripts/python/postdoc_project/rxfire/figure/'+f'{state_abbr[i]}_ts_mod_vs_obs_pm25.png'
     plt.savefig(out_fn, bbox_inches='tight', dpi=600)
-    plt.close(fig)  # FIX: free memory across loop
+    plt.close(fig)
     print(f"Saved {out_fn}")

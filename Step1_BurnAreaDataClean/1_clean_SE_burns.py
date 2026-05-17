@@ -2,14 +2,13 @@
 ###############################################################################
 # clean_SE_burns.py
 # author: Jingting HUANG
-# purpose: To clean/extract burn permit data during 2010-2020
-#          To separate RxFire and AgFire in burn permit data
+# purpose: 1. To clean/extract burn permit data during 2010-2020
+#          2. To separate RxFire and AgFire in burn permit data
 # version history:
 #   02/17/2025 - original
 # data required:
 #   SE(seven states: FL, GA, AL, SC, NC, MS, TN) burn permits
-#   LANDFIRE Fire Behavior Fuel Model 13
-#   National Land Cover Database (NLCD)
+#   40 Scott and Burgan Fire Behavior Fuel Models, LANDFIRE 2020 Update
 # usage:
 #   -
 # to do:
@@ -22,11 +21,9 @@
 
 import os
 import sys
-import glob
 import pandas as pd
 import numpy as np
 import math
-from datetime import datetime
 import pyproj
 from shapely import geometry
 from shapely.geometry import Point
@@ -39,7 +36,7 @@ warnings.filterwarnings("ignore")
 # Change directory
 os.getcwd()
 print('cwd is %s ' % (os.getcwd()))
-dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/data/SE_permit_data_2010-2020/update_criteria'
+dir_python_local = os.path.join("/home/jh94030/scripts/python/postdoc_project/rxfire/data/SE_permit_data_2010-2020", "update_criteria")
 
 # Append the location of our function directory
 dir_python_scripts = '/home/jh94030/scripts/python/postdoc_project/rxfire/analysis/step4_RxFireEmissionCode'
@@ -100,7 +97,7 @@ SHOW_PLOTS = False
 states = ["Florida", "Alabama", "Mississippi", "Georgia", "Tennessee", "South Carolina", "North Carolina"]
 state_abbreviations = {"Florida": "FL", "Alabama": "AL", "Mississippi": "MS", "Georgia": "GA", "Tennessee": "TN", "South Carolina": "SC", "North Carolina": "NC"}
 
-permit_file = os.path.join("SE_BurnData2010_2020-AllStates.csv")
+permit_file = os.path.join("/home/jh94030/scripts/python/postdoc_project/rxfire/data/SE_permit_data_2010-2020", "SE_BurnData2010_2020-AllStates.csv")
 
 # Filter rows where the year is during 2010 - 2020
 for selected_year in range(2010, 2021):
@@ -169,34 +166,6 @@ for selected_year in range(2010, 2021):
             output_file = f"{state_abbr}_{selected_year}_permits.csv"
             state_df.to_csv(output_file, index=False)
             print(f"Saved {output_file}")
-
-        # merged_df = state_df.groupby(['LATITUDE', 'LONGITUDE', 'BURN_TYPE', 'STATE', 'YEAR', 'DATE'], as_index=False)['ACRES'].sum()
-
-        # num_fires = len(merged_df)
-        # print("#Total after merged:", num_fires)
-
-        # Add a column 'OBJECTID' that represents the index of each row
-        # merged_df = merged_df.sort_values(by='DATE', ascending=True)
-        # merged_df.reset_index(drop=True, inplace=True)  # Reset index to 0...n-1
-        # merged_df['OBJECTID'] = merged_df.index + 1     # Assign a 1-based sequence
-
-        # if SHOW_PLOTS:
-        #     # Optional quick-look plot (disable on HPC if slow)
-        #     if state.geom_type == "MultiPolygon":
-        #         for geom in state.geoms:
-        #             xs, ys = geom.exterior.xy
-        #             plt.plot(xs, ys, 'k')
-        #     else:
-        #         xs, ys = state.exterior.xy
-        #         plt.plot(xs, ys, 'k')
-        #     plt.scatter(merged_df["LONGITUDE"], merged_df["LATITUDE"], s=1)
-        #     plt.show()
-
-        # if not merged_df.empty:
-        #     # Save the cleaned data for the state
-        #     output_file = f"{state_abbr}_{selected_year}_permits.csv"
-        #     merged_df.to_csv(output_file, index=False)
-        #     print(f"Saved {output_file}")
 
 # LANDFIRE inputs by era
 lf_files = {
@@ -363,10 +332,7 @@ for selected_year in range(2010, 2021):
                     #     fuel_type must be agricultural_type_num AND BURN_TYPE must match those keywords
                     if require_keywords_for_agri is not None:
                         if contains_agriculture_keyword is not None:
-                            # # test_criteria
-                            # if contains_agriculture.iloc[index] or (fuel_type == agricultural_type_num):
-                            #     agri_index.append(index)
-                            
+
                             # new_criteria
                             if contains_agriculture.iloc[index]:
                                 agri_index.append(index)
@@ -380,6 +346,7 @@ for selected_year in range(2010, 2021):
                         else:
                             if (fuel_type == agricultural_type_num) or require_hit.iloc[index]:
                                 agri_index.append(index)
+                                #####
                             elif fuel_type in invalid_type_num:
                                 invalid_index.append(index)
                             else:
@@ -388,6 +355,7 @@ for selected_year in range(2010, 2021):
                         # Original behavior for other states:
                         if contains_agriculture.iloc[index] or (fuel_type == agricultural_type_num):
                             agri_index.append(index)
+                            #####
                         elif fuel_type in invalid_type_num:
                             invalid_index.append(index)
                         else:

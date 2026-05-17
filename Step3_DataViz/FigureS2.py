@@ -30,14 +30,12 @@ DIR_SCRIPTS = '/home/jh94030/scripts/python/postdoc_project/rxfire/analysis'
 PROJ_DIR = "/home/jh94030/.conda/envs/uscensus_ej/share/proj"
 
 PERMIT_TMPL = "/home/jh94030/scripts/python/postdoc_project/rxfire/data/SE_permit_data_2010-2020/update_criteria/SE_Combined_Permit_lf_3states_agr_{}.csv"
-NEI_TMPL    = "/home/jh94030/scripts/python/postdoc_project/rxfire/data/NEI_rxf_inv/SE_Combined_NEI_ag_3states_{}.csv"
+NEI_TMPL    = "/home/jh94030/scripts/python/postdoc_project/rxfire/data/oth_fire_inv/NEI_rxf_inv/SE_Combined_NEI_ag_3states_{}.csv"
 
 MET_DIR = "/scratch/jh94030/CMAQ-input/met/12US1/nc_classic/2017/mcip_v51_wrf_v411_noltng/01"
 MET_FILE = f"{MET_DIR}/METCRO2D_20170101.nc"
 
 SHP_STATE = '/work/chflab/jthuang/breadcrumbs/mapping_state/cb_2020_us_state_500k/cb_2020_us_state_500k.shp'
-# (Optional) County shapefile kept for future use
-# SHP_COUNTY = '/work/chflab/jthuang/breadcrumbs/us_demo_county_2020/cb_2020_us_county_500k.shp'
 
 YEARS = [2017, 2018, 2019]
 CELL_AREA_KM2 = 12 * 12
@@ -60,10 +58,6 @@ CITIES = {
 }
 
 # Plot defaults you used
-# COLORS_ABS = ['#e6e4e6', '#eed5bb', '#f6c690', '#ee9e6b', '#d55e4d', '#bd1e2f']
-# BOUNDS_ABS = [0, 5, 10, 25, 50, 75, 100]
-# COLORS_DIFF = ['#746170', '#99879C', '#c2b7c6', '#C5E3F6', '#fee0b6', '#fdb863', '#e08214', '#b35806']
-# BOUNDS_DIFF = [-45, -20, -5, -1, 0, 1, 5, 20, 45]
 COLORS_ABS = ['#e6e4e6', '#eed5bb', '#f6c690', '#ee9e6b', '#d55e4d']
 BOUNDS_ABS = [0, 5, 10, 25, 50, 75]
 COLORS_DIFF = ['#403E4B', '#746170', '#99879C', '#c2b7c6', '#fee0b6', '#e08214', '#7f3b08']

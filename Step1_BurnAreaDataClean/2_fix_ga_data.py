@@ -2,13 +2,11 @@
 # using GeorgiaTech data to replace the missing data
 import os
 import sys
-import glob
 import pandas as pd
 import numpy as np
 import rasterio
 import pyproj
 import math
-from shapely import geometry
 from shapely.geometry import Point
 from rasterstats import zonal_stats
 
@@ -37,8 +35,6 @@ def _to_regex(term_or_list):
         return "|".join(parts) if parts else ""
     return str(term_or_list)
 ###############################################################################
-SHOW_PLOTS = False
-
 new_df = pd.read_csv("/work/chflab/jthuang/breadcrumbs/RxEmissionData/BlueSky_Input/SE_Combined_Permit_rx.csv")
 
 df = new_df.loc[new_df['State'] == 'GA', :].copy()
@@ -65,7 +61,7 @@ df_sub = df_sub.drop(columns=['Id'], errors='ignore')
 
 # 4. Reset the index (so row numbers go 0,1,2,…) and create OBJECTID
 df_sub = df_sub.reset_index(drop=True)
-df_sub['OBJECTID'] = df_sub.index + 44362 # update_criteria/test_criteria
+df_sub['OBJECTID'] = df_sub.index + 44362 # update_criteria
 
 # Now df has columns: STATE, DATE, LATITUDE, LONGITUDE, ACRES, YEAR, OBJECTID
 df_sub['BURN_TYPE'] = "Other"
@@ -77,12 +73,6 @@ lf_files = {
     2020: "/work/chflab/jthuang/breadcrumbs/LandFire/LF2022_FBFM40_220_CONUS/Tif/LC22_F40_220.tif"
 }
 
-year_range = {
-    2014: [2010, 2014],  # LF 2014 Update--Includes disturbances for the years 1999-2014
-    2016: [2015, 2016],  # LF 2016 Remap--Includes disturbances for the years 2015-2016--2.0.0 (200) = new base map
-    2020: [2017, 2020]   # LF 2020--Includes disturbances for the years 2017-2020--2.2.0 (220) = 2nd update to LF 2016 Remap
-}
-
 # Create transformers once
 lf_file = lf_files[2020]
 
@@ -92,7 +82,6 @@ with rasterio.open(lf_file) as r:
     permit_id = df_sub['OBJECTID'].to_numpy()
     permit_lat = df_sub['LATITUDE'].to_numpy()
     permit_lon = df_sub['LONGITUDE'].to_numpy()
-    permit_time = pd.to_datetime(df_sub['DATE'], errors='coerce')
     burn_area = df_sub["ACRES"].to_numpy()
 
     num_fires = len(df_sub)
@@ -189,14 +178,14 @@ def check_conditions(state_abbr_local, contains_agriculture_keyword=None, requir
     if pattern:
         contains_agriculture = df_sub['BURN_TYPE'].fillna("").astype(str).str.contains(pattern, case=False, regex=True)
     else:
-        contains_agriculture = pd.Series(False, index=permit_df.index)
+        contains_agriculture = pd.Series(False, index=df_sub.index)
 
     # Build keyword matcher #2: GA/SC/FL restriction — only classify agri when fuel_type is agri AND BURN_TYPE hits these
     if require_keywords_for_agri:
         pattern_req = _to_regex(require_keywords_for_agri)
         require_hit = df_sub['BURN_TYPE'].fillna("").astype(str).str.contains(pattern_req, case=False, regex=True)
     else:
-        require_hit = pd.Series(True, index=permit_df.index)  # no restriction if not provided
+        require_hit = pd.Series(True, index=df_sub.index)  # no restriction if not provided
 
     for index, row in df_sub.iterrows():
         fuel_type = row["fuel_type"]
@@ -205,16 +194,8 @@ def check_conditions(state_abbr_local, contains_agriculture_keyword=None, requir
         #     fuel_type must be agricultural_type_num AND BURN_TYPE must match those keywords
         if require_keywords_for_agri is not None:
             if contains_agriculture_keyword is not None:
-                # test_criteria
                 if contains_agriculture.iloc[index] or (fuel_type == agricultural_type_num):
                     agri_index.append(index)
-
-                # # new_criteria
-                # if contains_agriculture.iloc[index]:
-                #     agri_index.append(index)
-                # elif (fuel_type == agricultural_type_num) and require_hit.iloc[index]:
-                #     agri_index.append(index)
-                    #####
                 elif fuel_type in invalid_type_num:
                     invalid_index.append(index)
                 else:
@@ -236,36 +217,13 @@ def check_conditions(state_abbr_local, contains_agriculture_keyword=None, requir
                 valid_index.append(index)
 
 # Apply conditions based on state abbreviation
-if state_abbr == 'FL':
-    # Keep your original FL rule (substring 'Agricultur')
-    # FL: ONLY when BURN_TYPE contains "Other" AND fuel_type == agricultural_type_num
-    check_conditions('FL', contains_agriculture_keyword='Agricultur', require_keywords_for_agri=['Other'])
-
-elif state_abbr == 'GA':
+if state_abbr == 'GA':
     # Keep your original GA rule (substring 'CROP', 'ORCHARD')
     # GA: ONLY when BURN_TYPE contains "PASTURE" or "Other" AND fuel_type == agricultural_type_num
     check_conditions('GA', contains_agriculture_keyword=['CROP', 'ORCHARD'], require_keywords_for_agri=['PASTURE', 'Other'])
-
-elif state_abbr == 'SC':
-    # Keep your original SC rule (substring 'PASTURE', 'DITCH')
-    # SC: ONLY when BURN_TYPE contains "DISEASE" or "Other" AND fuel_type == agricultural_type_num
-    check_conditions('SC', contains_agriculture_keyword=['PASTURE', 'DITCH'], require_keywords_for_agri=['DISEASE', 'Other'])
-
-elif state_abbr == 'MS':
-    # Keep your original MS rule (substring 'Agricultur')
-    check_conditions('MS', contains_agriculture_keyword='Agricultur', require_keywords_for_agri=['Other'])
-
-elif state_abbr == 'TN':
-    # Keep your original TN rule (substring 'Agricultur')
-    check_conditions('TN', contains_agriculture_keyword='Agricultur', require_keywords_for_agri=['Other'])
-
-elif state_abbr == 'NC':
-    # Keep your original NC rule (substring 'Other')
-    check_conditions('NC', contains_agriculture_keyword='Other', require_keywords_for_agri=['Other'])
-
 else:
     # Fallback: original else branch
-    for index, row in permit_df.iterrows():
+    for index, row in df_sub.iterrows():
         fuel_type = row["fuel_type"]
         if fuel_type == agricultural_type_num:
             agri_index.append(index)

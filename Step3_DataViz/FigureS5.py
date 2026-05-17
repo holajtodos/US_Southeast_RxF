@@ -2,7 +2,7 @@
 ###############################################################################
 # regrid_rxburn_acres.py 
 # author: Jingting HUANG
-# purpose: Regrid prescribed fire burned area over FL, GA, SC to CMAQ grid
+# purpose: Regrid Rx fire burned area from permits over FL, GA, SC to CMAQ grid
 # figures: Figure S5 with federal lands
 ###############################################################################
 
@@ -36,13 +36,13 @@ os.environ["PROJ_LIB"]  = "/home/jh94030/.conda/envs/myenv/share/proj"
 os.environ["PROJ_DATA"] = "/home/jh94030/.conda/envs/myenv/share/proj"
 
 from pyproj import datadir
-datadir.set_data_dir("/home/jh94030/.conda/envs/myenv/share/proj")  # keep consistent
+datadir.set_data_dir("/home/jh94030/.conda/envs/myenv/share/proj")
 
 dir_python_local   = "/home/jh94030/scripts/python/postdoc_project/rxfire/figure"
 dir_python_scripts = "/home/jh94030/scripts/python/postdoc_project/rxfire/analysis"
 
 sys.path.append(os.path.join(dir_python_scripts, "step3_BurnDataSelection"))
-from util import CMAQGrid2D  # assumes this returns dict with 'Lon' and 'Lat'
+from util import CMAQGrid2D
 
 os.chdir(dir_python_local)
 
@@ -157,7 +157,7 @@ fed_fl_ga_sc = (gpd.sjoin(gdf_federal, target_ll, how="inner", predicate="inters
                   .rename(columns={"STUSPS": "STATE"})
                   .drop(columns=["index_right"]))
 
-# ------------------------- Figure 1a: Mean annual % burned (permits) -------------------------
+# ------------------------- Figure S5: Mean annual % burned (permits) -------------------------
 permits_df = load_year_concat(PERMIT_TEMPLATE, YEARS, parse_dates_col="DATE")
 permits_pct_grid = percent_grid_from_points(
     df=permits_df, lat_col="LATITUDE", lon_col="LONGITUDE",

@@ -36,7 +36,6 @@
 from io import StringIO
 import sys
 import os
-import pytz
 import math
 import numpy as np
 import pandas as pd
@@ -53,7 +52,7 @@ warnings.filterwarnings("ignore")
 # Change directory 
 os.getcwd()
 print('cwd is %s ' % (os.getcwd()))
-dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/data/NEI_rxf_inv'
+dir_python_local = '/home/jh94030/scripts/python/postdoc_project/rxfire/data/oth_fire_inv/NEI_rxf_inv'
 
 # Append the location of our function directory
 dir_python_scripts = '/home/jh94030/scripts/python/postdoc_project/rxfire/analysis/step4_RxFireEmissionCode'
@@ -113,6 +112,12 @@ for k, fname in enumerate(fire_inv):
     data_str = ''.join(lines[header_index:])
     df = pd.read_csv(StringIO(data_str))
 
+    # Harmonize pollutant names before any processing
+    df['poll'] = df['poll'].replace({
+        'PM25-PRI': 'PM2_5',
+        'PM10-PRI': 'PM10'
+    })
+
     # Melt day columns long
     df_melted = df[meta_cols + day_cols].melt(
         id_vars=meta_cols, value_vars=day_cols, var_name='day_column', value_name='value'
@@ -144,7 +149,7 @@ for k, fname in enumerate(fire_inv):
     df_pivot[pollutant_cols] = df_pivot[pollutant_cols].fillna(0)
 
     # RX SCC filter
-    rxfire_scc_set = {2811020002, 2811015002}
+    rxfire_scc_set = {2811020002, 2811015001, 2811015002}
     df_merged = df_pivot[df_pivot['scc'].isin(rxfire_scc_set)].copy()
     df_daily_list.append(df_merged)
 
@@ -187,6 +192,12 @@ for k, fname in enumerate(fire_inv):
     data_str = ''.join(lines[header_index:])
     df = pd.read_csv(StringIO(data_str))
 
+    # Harmonize pollutant names before any processing
+    df['poll'] = df['poll'].replace({
+        'PM25-PRI': 'PM2_5',
+        'PM10-PRI': 'PM10'
+    })
+
     df_pivot = df.pivot_table(
         index=['country_cd', 'region_cd', 'facility_id', 'unit_id', 'rel_point_id', 'process_id', 'scc', 'longitude', 'latitude'],
         columns='poll',
@@ -202,7 +213,7 @@ for k, fname in enumerate(fire_inv):
     df_pivot = df_pivot[grp_cols + pollutant_cols]
     df_pivot[pollutant_cols] = df_pivot[pollutant_cols].fillna(0)
 
-    rxfire_scc_set = {2811020002, 2811015002}
+    rxfire_scc_set = {2811020002, 2811015001, 2811015002}
     df_merged = df_pivot[df_pivot['scc'].isin(rxfire_scc_set)].copy()
     df_annual_list.append(df_merged)
 
@@ -264,17 +275,39 @@ for selected_year in range(2017, 2020):
 
         print(f"#Valid fires for {state_abbr} in {selected_year}: {len(state_df)}")
 
-        # Group to unique events
+        # Group to unique events, summing SCC phases (2811015001 + 2811015002)
+        pol_cols = ['CO', 'CO2', 'HFLUX', 'NH3', 'NOX', 'PM10', 'PM2_5', 'SO2', 'VOC']
+        out_cols = ['ACRESBURNED'] + pol_cols
+
+        # Ensure numeric + fill missing
+        for c in out_cols:
+            if c not in state_df.columns:
+                state_df[c] = 0.0
+        state_df[out_cols] = state_df[out_cols].apply(pd.to_numeric, errors='coerce').fillna(0.0)
+
+        # Map phases to a single SCC for grouping (choose 2811015002 as the combined label)
+        phase_map = {2811015001: 2811015002, 2811015002: 2811015002}
+        state_df['scc_group'] = state_df['scc'].map(phase_map).fillna(state_df['scc']).astype(int)
+
+        # Aggregation: ACRESBURNED should not double-count; pollutants should add across phases
+        agg_dict = {'ACRESBURNED': 'max'}
+        agg_dict.update({c: 'sum' for c in pol_cols})
+
         merged_df = state_df.groupby(
-            ['country_cd', 'region_cd', 'facility_id', 'unit_id', 'rel_point_id', 'process_id', 'scc', 'latitude', 'longitude', 'DATE'],
+            ['country_cd', 'region_cd', 'facility_id', 'unit_id', 'rel_point_id',
+             'process_id', 'scc_group', 'latitude', 'longitude', 'DATE'],
             as_index=False
-        )["ACRESBURNED"].sum()
+        ).agg(agg_dict)
+
+        # Keep column name 'scc' for downstream compatibility / output format
+        merged_df = merged_df.rename(columns={'scc_group': 'scc'})
+
         merged_df['STATE'] = state_abbr
         merged_df['YEAR'] = selected_year
 
         print(f"#Total after merging: {len(merged_df)}")
         print(merged_df.scc.unique())
-        
+
         if SHOW_PLOTS:
             # Optional plot
             if state_geom.geom_type == "MultiPolygon":
@@ -313,9 +346,6 @@ for selected_year in combine_years_rx:
         out = f"SE_Combined_NEI_rx_3states_{selected_year}.csv"
         res_df.to_csv(out, index=False, header=True)
         print(f"Saved {out}")
-
-dateparse = lambda x: datetime.strptime(x, '%Y-%m-%d')
-utc = pytz.timezone('UTC')
 
 # LANDFIRE .tif (FBFM40)
 lf_files = {
@@ -473,6 +503,11 @@ def read_and_melt_csv(path, year):
     else:
         raise RuntimeError(f"Cannot find column headers in '{path}'")
     df = pd.read_csv(StringIO(''.join(lines[header_index:])))
+    # Harmonize pollutant names before any processing
+    df['poll'] = df['poll'].replace({
+        'PM25-PRI': 'PM2_5',
+        'PM10-PRI': 'PM10'
+    })
     df_melt = df[meta_cols + day_cols].melt(id_vars=meta_cols, var_name='day_column', value_name='value')
     df_melt = df_melt[df_melt['value'].notna() & (df_melt['value'] != 0)]
     df_melt['day'] = df_melt['day_column'].str.extract(r'dayval(\d+)').astype(int)
@@ -541,6 +576,11 @@ def read_and_pivot_csv(path):
     else:
         raise RuntimeError(f"Cannot find column headers in '{path}'")
     df = pd.read_csv(StringIO(''.join(lines[header_index:])))
+    # Harmonize pollutant names before any processing
+    df['poll'] = df['poll'].replace({
+        'PM25-PRI': 'PM2_5',
+        'PM10-PRI': 'PM10'
+    })
     df_pivot = df.pivot_table(index=grp_cols, columns='poll', values='ann_value', aggfunc='sum').reset_index()
     df_pivot.columns.name = None
     for col in pollutant_cols:
@@ -579,13 +619,6 @@ for df_day, df_ann in zip(df_daily_list, df_annual_list):
 
 df_final = pd.concat(merged_all_years, ignore_index=True)
 
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
 # 7-state list for AG extraction
 states = ["Florida", "Alabama", "Mississippi", "Georgia", "Tennessee", "South Carolina", "North Carolina"]
 state_abbreviations = {"Florida": "FL", "Alabama": "AL", "Mississippi": "MS", "Georgia": "GA", "Tennessee": "TN", "South Carolina": "SC", "North Carolina": "NC"}
@@ -622,10 +655,20 @@ for selected_year in range(2017, 2020):
 
         print(f"#Valid fires for {state_abbr} in {selected_year}: {len(state_df)}")
 
+        # Group to unique events (include pollutants)
+        out_cols = ['ACRESBURNED', 'CO', 'CO2', 'HFLUX', 'NH3', 'NOX', 'PM10', 'PM2_5', 'SO2', 'VOC']
+
+        for c in out_cols:
+            if c not in state_df.columns:
+                state_df[c] = 0.0
+        state_df[out_cols] = state_df[out_cols].apply(pd.to_numeric, errors='coerce').fillna(0.0)
+
         merged_df = state_df.groupby(
-            ['country_cd', 'region_cd', 'facility_id', 'unit_id', 'rel_point_id', 'process_id', 'scc', 'latitude', 'longitude', 'DATE'],
+            ['country_cd', 'region_cd', 'facility_id', 'unit_id', 'rel_point_id', 'process_id',
+             'scc', 'latitude', 'longitude', 'DATE'],
             as_index=False
-        )["ACRESBURNED"].sum()
+        )[out_cols].sum()
+
         merged_df['STATE'] = state_abbr
         merged_df['YEAR'] = selected_year
 
