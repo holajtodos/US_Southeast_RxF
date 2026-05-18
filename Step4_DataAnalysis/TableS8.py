@@ -33,6 +33,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 BASE_DIR = "/home/jh94030/scripts/python/postdoc_project/rxfire"
 DATA_DIR = os.path.join(BASE_DIR, "data")
 FIG_DIR = os.path.join(BASE_DIR, "figure")
+OUT_DIR = FIG_DIR
 
 DIR_SCRIPTS = os.path.join(BASE_DIR, "analysis")
 sys.path.append(os.path.join(DIR_SCRIPTS, "step3_BurnDataSelection"))
@@ -49,7 +50,10 @@ FINN_TEMPLATE = os.path.join(
     DATA_DIR, "oth_fire_inv/FINN_rxf_inv", "SE_Combined_FINN_rx_wf_{}_Jan-Apr.csv",
 )
 
-SEFM_GDB_PATH  = os.path.join("/work/chflab/jthuang/breadcrumbs", "SEFM", "SEFM_L_ABA_1994_2024_polys.gdb")
+SEFM_GDB_PATH  = os.path.join("/work/chflab/jthuang/breadcrumbs", "SEFM_L_ABA_1994_2024_polys.gdb")
+
+SEFM_DIR = os.path.join(DATA_DIR, "oth_fire_inv/SEFM_gridded_daily")
+SEFM_CACHE_DIR = SEFM_DIR
 
 STATES_SHP = (
     "/work/chflab/jthuang/breadcrumbs/mapping_state/"
@@ -437,47 +441,143 @@ def load_sefm_spring(gdb_path, years):
     return combined
 
 
-def regrid_sefm_to_grid(fire_gdf, grid_gdf, batch_size=10_000):
+def _repair_single_geometry(geom):
+    """Return a GEOS-valid geometry, using make_valid when available."""
+    if geom is None or geom.is_empty or geom.is_valid:
+        return geom
+    try:
+        from shapely import make_valid
+        return make_valid(geom)
+    except Exception:
+        try:
+            from shapely.validation import make_valid
+            return make_valid(geom)
+        except Exception:
+            return geom.buffer(0)
+
+
+def repair_polygon_gdf(gdf, label="geometries"):
+    """Repair invalid geometries and remove empty or zero-area features.
+
+    This is needed for SEFM polygons because a small number of records can
+    contain self-intersections. Those invalid rings can crash GEOS during
+    vectorized intersection even when most polygons are valid.
+    """
+    gdf = gdf.copy()
+    n0 = len(gdf)
+    gdf = gdf[gdf.geometry.notna()].copy()
+
+    invalid = ~gdf.geometry.is_valid
+    n_invalid = int(invalid.sum())
+    if n_invalid > 0:
+        print(f"  Repairing {n_invalid:,} invalid {label} ...")
+        gdf.loc[invalid, "geometry"] = gdf.loc[invalid, "geometry"].apply(
+            _repair_single_geometry
+        )
+
+    # Re-check after repair. buffer(0) can occasionally return empty geometry.
+    valid = gdf.geometry.notna() & gdf.geometry.is_valid & ~gdf.geometry.is_empty
+    positive_area = gdf.geometry.area > 0
+    keep = valid & positive_area
+    n_drop = n0 - int(keep.sum())
+    if n_drop > 0:
+        print(f"  Dropping {n_drop:,} empty/invalid/zero-area {label}.")
+    return gdf.loc[keep].reset_index(drop=True)
+
+
+def safe_intersection_areas(fire_g, grid_g):
+    """Compute intersection areas robustly.
+
+    The fast path uses Shapely 2 vectorized operations. If any remaining
+    geometry triggers a GEOS TopologyException, the code falls back to a
+    pair-by-pair calculation and repairs the specific failing geometry.
+    """
     from shapely import intersection
     from shapely import area as shapely_area
+    from shapely.errors import GEOSException
+
+    try:
+        return np.asarray(shapely_area(intersection(fire_g, grid_g)), dtype=float)
+    except GEOSException as exc:
+        print(f"    WARNING: vectorized intersection failed ({exc}).")
+        print("    Falling back to pair-wise repaired intersections for this batch.")
+        out = np.zeros(len(fire_g), dtype=float)
+        for i, (fg, gg) in enumerate(zip(fire_g, grid_g)):
+            try:
+                out[i] = fg.intersection(gg).area
+            except GEOSException:
+                try:
+                    fg2 = _repair_single_geometry(fg)
+                    gg2 = _repair_single_geometry(gg)
+                    if fg2 is not None and gg2 is not None:
+                        out[i] = fg2.intersection(gg2).area
+                except Exception:
+                    out[i] = 0.0
+        return out
+
+
+def regrid_sefm_to_grid(fire_gdf, grid_gdf, batch_size=10_000):
     fire_lcc = fire_gdf.to_crs(grid_gdf.crs).copy()
+    fire_lcc = repair_polygon_gdf(fire_lcc, label="SEFM fire polygons")
+    grid_clean = repair_polygon_gdf(grid_gdf, label="CMAQ grid cells")
+
     fire_lcc["fire_idx"] = np.arange(len(fire_lcc))
     fire_lcc["fire_area_m2"] = fire_lcc.geometry.area
+    fire_lcc = fire_lcc[fire_lcc["fire_area_m2"] > 0].reset_index(drop=True)
+
     n_fires = len(fire_lcc)
     n_batches = (n_fires + batch_size - 1) // batch_size
     print(f"  Regridding {n_fires:,} fire polygons in {n_batches} batches ...")
+
     results = []
     for b in range(n_batches):
         lo = b * batch_size
         hi = min(lo + batch_size, n_fires)
-        batch = fire_lcc.iloc[lo:hi]
-        pairs = gpd.sjoin(batch[["fire_idx", "geometry"]],
-                          grid_gdf[["ROW", "COL", "STATE", "geometry"]],
-                          how="inner", predicate="intersects")
+        batch = fire_lcc.iloc[lo:hi].copy()
+
+        pairs = gpd.sjoin(
+            batch[["fire_idx", "geometry"]],
+            grid_clean[["ROW", "COL", "STATE", "geometry"]],
+            how="inner",
+            predicate="intersects",
+        )
         if pairs.empty:
             continue
+
         fire_geoms = batch.set_index("fire_idx")["geometry"]
-        grid_geoms = grid_gdf["geometry"]
+        grid_geoms = grid_clean["geometry"]
         fire_g = fire_geoms.loc[pairs["fire_idx"]].values
-        grid_g = grid_geoms.iloc[pairs["index_right"]].values
-        isect_geoms = intersection(fire_g, grid_g)
-        isect_areas = shapely_area(isect_geoms)
+        grid_g = grid_geoms.loc[pairs["index_right"]].values
+
         pairs = pairs.copy()
-        pairs["intersect_area_m2"] = isect_areas
+        pairs["intersect_area_m2"] = safe_intersection_areas(fire_g, grid_g)
         pairs = pairs[pairs["intersect_area_m2"] > 0].copy()
+        if pairs.empty:
+            continue
+
         pairs = pairs.merge(
             batch[["fire_idx", "fire_area_m2", "date", "YEAR"]],
-            on="fire_idx", how="left")
+            on="fire_idx",
+            how="left",
+        )
         pairs["frac"] = pairs["intersect_area_m2"] / pairs["fire_area_m2"]
-        pairs["allocated_acres"] = (
-            pairs["fire_area_m2"] * pairs["frac"] * M2_TO_ACRES)
-        results.append(pairs[["fire_idx", "ROW", "COL", "STATE",
-                               "date", "YEAR", "fire_area_m2",
-                               "intersect_area_m2", "frac",
-                               "allocated_acres"]])
+        pairs["frac"] = pairs["frac"].clip(lower=0, upper=1)
+        pairs["allocated_acres"] = pairs["intersect_area_m2"] * M2_TO_ACRES
+
+        results.append(
+            pairs[[
+                "fire_idx", "ROW", "COL", "STATE", "date", "YEAR",
+                "fire_area_m2", "intersect_area_m2", "frac",
+                "allocated_acres",
+            ]]
+        )
+
         if (b + 1) % 5 == 0 or b == n_batches - 1:
             print(f"    batch {b+1}/{n_batches} done  "
                   f"({hi:,} / {n_fires:,} fires)")
+
+    if not results:
+        raise RuntimeError("SEFM regridding produced no grid-cell intersections.")
     return pd.concat(results, ignore_index=True)
 
 
@@ -617,10 +717,8 @@ if __name__ == "__main__":
 
     # 4. Load / compute SEFM
     print("\n" + "=" * 60)
-    sefm_yearly_npz = os.path.join(SEFM_DIR, "SEFM_gridded_daily",
-                                   "sefm_yearly_acres_grids.npz")
-    sefm_alloc_parquet = os.path.join(SEFM_DIR, "SEFM_gridded_daily",
-                                      "sefm_alloc_df.parquet")
+    sefm_yearly_npz = os.path.join(SEFM_CACHE_DIR, "sefm_yearly_acres_grids.npz")
+    sefm_alloc_parquet = os.path.join(SEFM_CACHE_DIR, "sefm_alloc_df.parquet")
 
     have_sefm_cache = (os.path.isfile(sefm_yearly_npz)
                        and os.path.isfile(sefm_alloc_parquet))
@@ -642,7 +740,7 @@ if __name__ == "__main__":
         sefm_yearly = sefm_yearly_acres_grids(alloc_df, YEARS, nrows, ncols)
         sefm_alloc_df = alloc_df
         # Cache
-        cache_dir = os.path.join(SEFM_DIR, "SEFM_gridded_daily")
+        cache_dir = SEFM_CACHE_DIR
         os.makedirs(cache_dir, exist_ok=True)
         np.savez(sefm_yearly_npz,
                  **{str(yr): sefm_yearly[yr] for yr in YEARS})
@@ -784,6 +882,7 @@ if __name__ == "__main__":
     print(df_stats.to_string(index=False))
 
     # Save to CSV
+    os.makedirs(OUT_DIR, exist_ok=True)
     csv_out = os.path.join(OUT_DIR,
                            "regression_stats_permits_vs_inventories.csv")
     df_stats.to_csv(csv_out, index=False)

@@ -37,6 +37,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 BASE_DIR = "/home/jh94030/scripts/python/postdoc_project/rxfire"
 DATA_DIR = os.path.join(BASE_DIR, "data")
 FIG_DIR = os.path.join(BASE_DIR, "figure")
+OUT_DIR =FIG_DIR
 
 DIR_SCRIPTS = os.path.join(BASE_DIR, "analysis")
 sys.path.append(os.path.join(DIR_SCRIPTS, "step3_BurnDataSelection"))
@@ -44,7 +45,7 @@ from util import CMAQGrid2D  # noqa: E402
 
 PERMIT_EMIS_TEMPLATE = os.path.join(
     DATA_DIR, "SE_permit_data_2010-2020/output_emis",
-    "SE_Combined_Permit_lf_3states_rx_{}.csv",
+    "SE_{}_bluesky_rx_emis.csv",
 )
 NEI_TEMPLATE = os.path.join(
     DATA_DIR, "oth_fire_inv/NEI_rxf_inv", "SE_Combined_NEI_rx_3states_{}.csv",
@@ -52,8 +53,6 @@ NEI_TEMPLATE = os.path.join(
 FINN_TEMPLATE = os.path.join(
     DATA_DIR, "oth_fire_inv/FINN_rxf_inv", "SE_Combined_FINN_rx_wf_{}_Jan-Apr.csv",
 )
-
-SEFM_GDB_PATH  = os.path.join("/work/chflab/jthuang/breadcrumbs", "SEFM", "SEFM_L_ABA_1994_2024_polys.gdb")
 
 STATES_SHP = (
     "/work/chflab/jthuang/breadcrumbs/mapping_state/"

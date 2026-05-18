@@ -24,7 +24,7 @@ import WRFDomainLib
 # User paths (edit as needed)
 # ----------------------------
 DEM_FILE = Path("/work/chflab/jthuang/breadcrumbs/ETOPO1/ETOPO1.0_1degree.nc")
-WPS_FILE = Path("/home/jh94030/work/breadcrumbs/postwrf/namelist_wrf_cmaq.wps")
+WPS_FILE = Path("/home/jh94030/scripts/models/WRF_NAM/WPS_scripts/namelists/namelist_wrf_cmaq.wps")
 OUT_PNG = Path("/home/jh94030/scripts/python/postdoc_project/rxfire/figure/WRF-CMAQ_domain.png")
 
 # ------------------------- Fonts -------------------------

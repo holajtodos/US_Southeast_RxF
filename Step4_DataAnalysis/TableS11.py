@@ -78,7 +78,7 @@ def compute_metrics_from_df(df_slice):
 # ---------- Load & prepare all data ----------
 all_list = []
 for y in years:
-    fp = os.path.join(dir_data, f"aq_SE_{y}-test", f"AQS_Daily_aq_SE_{y}-test_with_smoke_day.csv")
+    fp = os.path.join(dir_data, f"aq_SE_{y}", f"AQS_Daily_aq_SE_{y}_with_smoke_day.csv")
     df = pd.read_csv(fp)
     df["YEAR"] = y  # ensure year present
     all_list.append(df)

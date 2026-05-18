@@ -49,7 +49,7 @@ YEARS = [2017, 2018, 2019]
 SMOKE_THRESHOLD = 3.5  # µg/m3
 
 # ---- Season toggle ----
-SEASON = "high"  # options: "all", "high", "low"
+SEASON = "low"  # options: "all", "high", "low"
 SEASON_MONTHS = {
     "all":  tuple(range(1, 13)),
     "high": (1, 2, 3, 4),                    # Jan–Apr
